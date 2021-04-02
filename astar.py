@@ -39,7 +39,7 @@ class AStarPlanner:
         while 1:
             if not open_set:
                 print("Open set is empty and no goal was found")
-                break
+                return None
 
             c_id = min(
                 open_set,
@@ -243,11 +243,14 @@ def main():
 
     a_star = AStarPlanner(area_x, area_y, obstacle_list, grid_size, robot_radius)
     path = a_star.planning(start, goal)
-    path.insert(0, goal)
-    path.append(start)
-    if show_animation:  # pragma: no cover
-        plt.plot([x for (x, y) in path], [y for (x, y) in path], "-r")
-        # plt.pause(0.001)
+
+    if path:
+        path.insert(0, goal)
+        path.append(start)
+        if show_animation:  # pragma: no cover
+            plt.plot([x for (x, y) in path], [y for (x, y) in path], "-r")
+            plt.show()
+    if show_animation:
         plt.show()
 
 
