@@ -7,29 +7,31 @@ show_animation = True
 
 class AStarPlanner:
 
-    def __init__(self, ox, oy, center_x, center_y, resolution, rr):
+    def __init__(self, area_x, area_y, obstacle_list, resolution, rr):
 
         self.resolution = resolution
         self.rr = rr
-        self.min_x, self.min_y = 0, 0
-        self.max_x, self.max_y = 0, 0
+        self.min_x = area_x[0]
+        self.min_y = area_y[0]
+        self.max_x = area_x[1]
+        self.max_y = area_y[1]
         self.obstacle_map = None
         self.x_width, self.y_width = 0, 0
         self.motion = self.get_motion_model()
-        self.calc_obstacle_map(ox, oy, center_x, center_y)
+        self.calc_obstacle_map(obstacle_list)
 
     class Node:
         def __init__(self, x, y, cost, parent_index):
+            self.cost = cost
             self.x = x  # index of grid
             self.y = y  # index of grid
-            self.cost = cost
             self.parent_index = parent_index
 
-    def planning(self, sx, sy, gx, gy):
-        start_node = self.Node(self.calc_xy_index(sx, self.min_x),
-                               self.calc_xy_index(sy, self.min_y), 0.0, -1)
-        goal_node = self.Node(self.calc_xy_index(gx, self.min_x),
-                              self.calc_xy_index(gy, self.min_y), 0.0, -1)
+    def planning(self, start, goal):
+        start_node = self.Node(self.calc_xy_index(start[0], self.min_x),
+                               self.calc_xy_index(start[1], self.min_y), 0.0, -1)
+        goal_node = self.Node(self.calc_xy_index(goal[0], self.min_x),
+                              self.calc_xy_index(goal[1], self.min_y), 0.0, -1)
 
         open_set, closed_set = dict(), dict()
         open_set[self.calc_grid_index(start_node)] = start_node
@@ -53,9 +55,9 @@ class AStarPlanner:
                     plt.pause(0.001)
 
             if current.x == goal_node.x and current.y == goal_node.y:
-                print("The goal was found")
                 goal_node.parent_index = current.parent_index
                 goal_node.cost = current.cost
+                print("The goal was found with cost: ", goal_node.cost*self.resolution)
                 break
 
             # Remove the item from the open set
@@ -88,7 +90,6 @@ class AStarPlanner:
         rx, ry = self.calc_final_path(goal_node, closed_set)
 
         return rx, ry
-
 
     def calc_final_path(self, goal_node, closed_set):
         # generate final course
@@ -138,12 +139,29 @@ class AStarPlanner:
 
         return True
 
-    def calc_obstacle_map(self, ox, oy, center_x, center_y):
+    def boundary(self):
+        print('haha')
+        ox, oy = [], []
+        for i in range(self.min_x, self.max_x):
+            ox.append(i)
+            oy.append(self.min_y)
+        for i in range(self.min_y, self.max_y):
+            ox.append(self.max_x)
+            oy.append(i)
+        for i in range(self.min_x, self.max_x):
+            ox.append(i)
+            oy.append(self.max_y)
+        for i in range(self.min_y, self.max_y):
+            ox.append(self.min_x)
+            oy.append(i)
+        if show_animation:
+            plt.plot(ox, oy, ".k")
 
-        self.min_x = round(min(ox))
-        self.min_y = round(min(oy))
-        self.max_x = round(max(ox))
-        self.max_y = round(max(oy))
+        return ox, oy
+
+    def calc_obstacle_map(self, obstacle_list):
+
+        ox, oy = self.boundary()
 
         self.x_width = round((self.max_x - self.min_x) / self.resolution)
         self.y_width = round((self.max_y - self.min_y) / self.resolution)
@@ -160,14 +178,14 @@ class AStarPlanner:
                     # condition for boundary
                     if d <= self.rr:
                         self.obstacle_map[ix][iy] = True
-                        #lt.plot(x, y, "xr")
+                        # lt.plot(x, y, "xr")
                         break
-                for iox, ioy in zip(center_x, center_y):
+                for iox, ioy in obstacle_list:
                     d = math.hypot(iox - x, ioy - y)
                     # condition for obstacles
-                    if d <= 2*self.rr:
+                    if d <= 2 * self.rr:
                         self.obstacle_map[ix][iy] = True
-                        #plt.plot(x, y, "xr")
+                        # plt.plot(x, y, "xr")
                         break
 
     @staticmethod
@@ -183,65 +201,54 @@ class AStarPlanner:
                   [1, 1, math.sqrt(2)]]
         return motion
 
+
 def main():
     print('Commencing')
+    area_x = [0, 60]
+    area_y = [0, 60]
     # start and goal position
-    end_x = 60
-    end_y = 60
-    sx = 10.0  # [m]
-    sy = 10.0  # [m]
-    gx = 50.0  # [m]
-    gy = 50.0  # [m]
-    grid_size = 2.0  # [m]
-    robot_radius = 5.0  # [m]
+    start = [10, 10]
+    goal = [50, 50]
+    grid_size = 2.0
+    robot_radius = 5.0
 
+    # circle obstacles with centers
 
-    # set Boundary position
-    ox, oy = [], []
-    for i in range(0, end_x):
-        ox.append(i)
-        oy.append(0)
-    for i in range(0, end_y):
-        ox.append(end_x)
-        oy.append(i)
-    for i in range(0, end_x):
-        ox.append(i)
-        oy.append(end_y)
-    for i in range(0, end_y):
-        ox.append(0)
-        oy.append(i)
+    obstacle_list = [
+        (30, 20),
+        (30, 40),
+        (10, 50),
+    ]
 
-    # circle obstacles with centers. Serves only for drawing. Planning algorithm will only use their centers.
-    center_x = [30, 30, 10]
-    center_y = [20, 40, 50]
     polomer = int(robot_radius)
     circle_x = []
     circle_y = []
-    for x, y in zip(center_x,center_y):
-        for r in range(-polomer,polomer+1):
-            d = round(math.sqrt(polomer*polomer-r*r))
-            left = x -d
+    for x, y in obstacle_list:
+        for r in range(-polomer, polomer + 1):
+            d = round(math.sqrt(polomer * polomer - r * r))
+            left = x - d
             right = x + d
             top = y - d
             bottom = y + d
-            circle_x.extend([left,right,x+r,x+r])
-            circle_y.extend([y+r,y+r,top,bottom])
+            circle_x.extend([left, right, x + r, x + r])
+            circle_y.extend([y + r, y + r, top, bottom])
 
     if show_animation:  # pragma: no cover
-        plt.plot(ox, oy, ".k")
         plt.plot(circle_x, circle_y, ".k")
-        plt.plot(sx, sy, "og")
-        plt.plot(gx, gy, "xb")
+        plt.plot(start[0], start[1], "og")
+        plt.plot(goal[0], goal[1], "xb")
         plt.grid(True)
         plt.axis("equal")
 
-
-    a_star = AStarPlanner(ox, oy, center_x, center_y, grid_size, robot_radius)
-    rx, ry = a_star.planning(sx, sy, gx, gy)
+    a_star = AStarPlanner(area_x, area_y, obstacle_list, grid_size, robot_radius)
+    rx, ry = a_star.planning(start, goal)
 
     if show_animation:  # pragma: no cover
+        plt.plot(start[0], start[1], "-r")
         plt.plot(rx, ry, "-r")
+        plt.plot(goal[0], goal[1], "-r")
         # plt.pause(0.001)
         plt.show()
+
 
 main()
