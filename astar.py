@@ -57,7 +57,7 @@ class AStarPlanner:
             if current.x == goal_node.x and current.y == goal_node.y:
                 goal_node.parent_index = current.parent_index
                 goal_node.cost = current.cost
-                print("The goal was found with cost: ", goal_node.cost*self.resolution)
+                print("The goal was found with cost: ", goal_node.cost * self.resolution)
                 break
 
             # Remove the item from the open set
@@ -87,22 +87,21 @@ class AStarPlanner:
                         # This path is the best until now. record it
                         open_set[n_id] = node
 
-        rx, ry = self.calc_final_path(goal_node, closed_set)
+        path = self.calc_final_path(goal_node, closed_set)
 
-        return rx, ry
+        return path
 
     def calc_final_path(self, goal_node, closed_set):
         # generate final course
-        rx, ry = [self.calc_grid_position(goal_node.x, self.min_x)], [
-            self.calc_grid_position(goal_node.y, self.min_y)]
+        path = [[self.calc_grid_position(goal_node.x, self.min_x),
+                 self.calc_grid_position(goal_node.y, self.min_y)]]
         parent_index = goal_node.parent_index
         while parent_index != -1:
             n = closed_set[parent_index]
-            rx.append(self.calc_grid_position(n.x, self.min_x))
-            ry.append(self.calc_grid_position(n.y, self.min_y))
+            path.append([self.calc_grid_position(n.x, self.min_x), self.calc_grid_position(n.y, self.min_y)])
             parent_index = n.parent_index
 
-        return rx, ry
+        return path
 
     @staticmethod
     def calc_heuristic(n1, n2):
@@ -111,13 +110,16 @@ class AStarPlanner:
         return d
 
     def calc_grid_position(self, index, min_position):
+        # calculates position in the workspace from the index on the grid
         pos = index * self.resolution + min_position
         return pos
 
     def calc_xy_index(self, position, min_pos):
+        # calculates position in the grid from the workspace position without grid
         return round((position - min_pos) / self.resolution)
 
     def calc_grid_index(self, node):
+        # calculates unique index for each node in the grid
         return (node.y - self.min_y) * self.x_width + (node.x - self.min_x)
 
     def verify_node(self, node):
@@ -140,7 +142,6 @@ class AStarPlanner:
         return True
 
     def boundary(self):
-        print('haha')
         ox, oy = [], []
         for i in range(self.min_x, self.max_x):
             ox.append(i)
@@ -209,7 +210,7 @@ def main():
     # start and goal position
     start = [10, 10]
     goal = [50, 50]
-    grid_size = 2.0
+    grid_size = 3.0
     robot_radius = 5.0
 
     # circle obstacles with centers
@@ -241,12 +242,11 @@ def main():
         plt.axis("equal")
 
     a_star = AStarPlanner(area_x, area_y, obstacle_list, grid_size, robot_radius)
-    rx, ry = a_star.planning(start, goal)
-
+    path = a_star.planning(start, goal)
+    path.insert(0, goal)
+    path.append(start)
     if show_animation:  # pragma: no cover
-        plt.plot(start[0], start[1], "-r")
-        plt.plot(rx, ry, "-r")
-        plt.plot(goal[0], goal[1], "-r")
+        plt.plot([x for (x, y) in path], [y for (x, y) in path], "-r")
         # plt.pause(0.001)
         plt.show()
 
