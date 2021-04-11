@@ -152,8 +152,8 @@ class RRTStar:
     def get_random_node(self):
         if random.randint(0, 100) > self.goal_sample_rate:
             rnd = self.Node(
-                random.uniform(self.min_x, self.max_x),
-                random.uniform(self.min_y, self.max_y))
+                random.randint(self.min_x, self.max_x),
+                random.randint(self.min_y, self.max_y))
         else:  # goal point sampling
             rnd = self.Node(self.end.x, self.end.y)
         return rnd
@@ -409,4 +409,5 @@ def main():
         plt.show()
 
 
-main()
+if __name__ == '__main__':
+    main()

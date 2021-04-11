@@ -2,7 +2,7 @@ import math
 
 import matplotlib.pyplot as plt
 
-show_animation = True
+show_animation = False
 
 
 class AStarPlanner:
@@ -87,20 +87,22 @@ class AStarPlanner:
                         # This path is the best until now. record it
                         open_set[n_id] = node
 
-        path = self.calc_final_path(goal_node, closed_set)
+        path = self.calc_final_path(goal_node, closed_set, start, goal)
 
         return path
 
-    def calc_final_path(self, goal_node, closed_set):
+    def calc_final_path(self, goal_node, closed_set, start, goal):
         # generate final course
         path = [[self.calc_grid_position(goal_node.x, self.min_x),
                  self.calc_grid_position(goal_node.y, self.min_y)]]
+        path.insert(0, goal)
         parent_index = goal_node.parent_index
         while parent_index != -1:
             n = closed_set[parent_index]
             path.append([self.calc_grid_position(n.x, self.min_x), self.calc_grid_position(n.y, self.min_y)])
             parent_index = n.parent_index
 
+        path.append(start)
         return path
 
     @staticmethod
@@ -245,8 +247,8 @@ def main():
     path = a_star.planning(start, goal)
 
     if path:
-        path.insert(0, goal)
-        path.append(start)
+        # path.insert(0, goal)
+        # path.append(start)
         if show_animation:  # pragma: no cover
             plt.plot([x for (x, y) in path], [y for (x, y) in path], "-r")
             plt.show()
@@ -254,4 +256,5 @@ def main():
         plt.show()
 
 
-main()
+if __name__ == '__main__':
+    main()
